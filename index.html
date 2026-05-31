@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codzienny Progres | Cloud Sync</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --container-bg: #1e1e1e;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --accent-color: #00e676;
+            --accent-hover: #00c853;
+            --streak-color: #ff9800;
+            --client-color: #00b0ff;
+            --danger-color: #ff5252;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .dashboard {
+            background-color: var(--container-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--container-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 16px;
+            z-index: 10;
+            font-weight: bold;
+            color: var(--accent-color);
+            transition: opacity 0.3s;
+        }
+
+        .stats-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .stat-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .streak-badge {
+            background-color: rgba(255, 152, 0, 0.1);
+            color: var(--streak-color);
+            border: 1px solid var(--streak-color);
+        }
+
+        .client-badge {
+            background-color: rgba(0, 176, 255, 0.1);
+            color: var(--client-color);
+            border: 1px solid var(--client-color);
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 24px;
+            text-align: left;
+            letter-spacing: 1px;
+            width: 55%;
+        }
+
+        .date-display {
+            text-align: left;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .progress-container {
+            background-color: #333;
+            border-radius: 8px;
+            height: 20px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--accent-color);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .habit-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+
+        .habit-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background-color: #2a2a2a;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .habit-item:hover {
+            transform: translateX(5px);
+            background-color: #333;
+        }
+
+        .habit-item input[type="checkbox"] {
+            margin-right: 15px;
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        .habit-text {
+            font-size: 15px;
+        }
+
+        .completed .habit-text {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .client-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #2a2a2a;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--client-color);
+        }
+
+        .client-controls span {
+            font-size: 14px;
+            color: var(--text-main);
+            font-weight: bold;
+        }
+
+        .client-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-client {
+            background-color: #1e1e1e;
+            border: 1px solid #444;
+            color: var(--text-main);
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .btn-client:hover {
+            background-color: var(--client-color);
+            color: #000;
+            border-color: var(--client-color);
+        }
+
+        .note-section textarea {
+            width: 100%;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 8px;
+            resize: vertical;
+            min-height: 80px;
+            box-sizing: border-box;
+            font-family: inherit;
+            margin-bottom: 15px;
+        }
+
+        .note-section textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .btn-reset {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--accent-color);
+            border: none;
+            color: #000;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+
+        .btn-reset:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-history {
+            width: 100%;
+            padding: 12px;
+            background-color: transparent;
+            border: 1px solid #444;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .btn-history:hover {
+            border-color: var(--text-main);
+            color: var(--text-main);
+        }
+
+        /* Zaktualizowany przycisk awaryjnego resetu */
+        .btn-factory-reset {
+            display: block;
+            margin: 30px auto 0 auto;
+            padding: 5px 15px;
+            background-color: transparent;
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+            opacity: 0.4;
+        }
+
+        .btn-factory-reset:hover {
+            background-color: var(--danger-color);
+            color: #fff;
+            opacity: 1;
+        }
+
+        .history-container {
+            display: none;
+            margin-top: 15px;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #444;
+        }
+
+        .history-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #444;
+        }
+
+        .history-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .history-date {
+            font-size: 12px;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .history-win {
+            font-size: 14px;
+            color: var(--text-main);
+            line-height: 1.4;
+        }
+        
+        .client-highlight {
+            color: var(--client-color);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <div class="loading-overlay" id="loadingOverlay">Łączenie z chmurą... ☁️</div>
+        
+        <div class="stats-container">
+            <div class="stat-badge client-badge" id="clientDisplay">💼 Łącznie klientów: 0</div>
+            <div class="stat-badge streak-badge" id="streakDisplay">🔥 0 dni</div>
+        </div>
+        
+        <h1>CODZIENNY PROGRES</h1>
+        <div class="date-display" id="dateDisplay"></div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <ul class="habit-list" id="habitList"></ul>
+
+        <div class="client-controls">
+            <span id="dailyClientsDisplay">Nowi klienci dzisiaj: 0</span>
+            <div class="client-buttons">
+                <button class="btn-client" id="btnMinusClient">-</button>
+                <button class="btn-client" id="btnAddClient">+</button>
+            </div>
+        </div>
+
+        <div class="note-section">
+            <textarea id="dailyWin" placeholder="Twój największy sukces dzisiaj? (Zapisuje się przy wyjściu)"></textarea>
+        </div>
+
+        <button class="btn-reset" id="btnReset">Zakończ dzień i zapisz w chmurze</button>
+        <button class="btn-history" id="btnHistory">📖 Historia Sukcesów</button>
+        
+        <div class="history-container" id="historyContainer"></div>
+
+        <button class="btn-factory-reset" id="btnFactoryReset">Reset</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // ==========================================
+        // TUTAJ WKLEJ SWÓJ FIREBASE CONFIG
+        // ==========================================
+        const firebaseConfig = {
+  apiKey: "AIzaSyD-3JLx2k5MSJfSkqJudPA7rnQftN8oA3s",
+  authDomain: "progres-1d6c8.firebaseapp.com",
+  projectId: "progres-1d6c8",
+  storageBucket: "progres-1d6c8.firebasestorage.app",
+  messagingSenderId: "442652455112",
+  appId: "1:442652455112:web:7034bf3763da9ecbedb5fd"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const docRef = doc(db, "dashboards", "moj_glowny_dashboard");
+
+        const defaultHabits = [
+            { id: 1, text: "Trening bokserski / Aktywność fizyczna", completed: false },
+            { id: 2, text: "Rozwój w IT: Przyswojenie 1 nowej umiejętności do pracy w Help Desku", completed: false },
+            { id: 3, text: "Zdobywanie nowych klientów na rolki lub prowadzenie social mediów", completed: false },
+            { id: 4, text: "Nauka angielskiego", completed: false }
+        ];
+
+        let appData = {
+            habits: JSON.parse(JSON.stringify(defaultHabits)),
+            streakCount: 0,
+            lastCompletedDate: null,
+            successHistory: [],
+            currentDailyWin: "",
+            totalClients: 0,
+            dailyNewClients: 0
+        };
+
+        const habitListElement = document.getElementById('habitList');
+        const progressBar = document.getElementById('progressBar');
+        const dateDisplay = document.getElementById('dateDisplay');
+        const dailyWinInput = document.getElementById('dailyWin');
+        const streakDisplay = document.getElementById('streakDisplay');
+        const historyContainer = document.getElementById('historyContainer');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        
+        const clientDisplay = document.getElementById('clientDisplay');
+        const dailyClientsDisplay = document.getElementById('dailyClientsDisplay');
+        const btnAddClient = document.getElementById('btnAddClient');
+        const btnMinusClient = document.getElementById('btnMinusClient');
+
+        async function fetchFromCloud() {
+            try {
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    appData = docSnap.data();
+                    
+                    if(!appData.habits || appData.habits.length === 0) appData.habits = JSON.parse(JSON.stringify(defaultHabits));
+                    if(typeof appData.totalClients === 'undefined') appData.totalClients = 0; 
+                    if(typeof appData.dailyNewClients === 'undefined') appData.dailyNewClients = 0; 
+                } else {
+                    await setDoc(docRef, appData);
+                }
+                
+                dailyWinInput.value = appData.currentDailyWin || '';
+                streakDisplay.innerText = `🔥 ${appData.streakCount} ${appData.streakCount === 1 ? 'dzień' : 'dni'}`;
+                clientDisplay.innerText = `💼 Łącznie klientów: ${appData.totalClients}`;
+                dailyClientsDisplay.innerText = `Nowi klienci dzisiaj: ${appData.dailyNewClients}`;
+                
+                renderHabits();
+                renderHistory();
+                
+                loadingOverlay.style.opacity = "0";
+                setTimeout(() => loadingOverlay.style.display = "none", 300);
+
+            } catch (error) {
+                console.error("Błąd bazy danych: ", error);
+                loadingOverlay.innerText = "Błąd połączenia. Sprawdź konsole.";
+                loadingOverlay.style.color = "red";
+            }
+        }
+
+        async function saveToCloud() {
+            try {
+                await setDoc(docRef, appData);
+            } catch (error) {
+                console.error("Błąd zapisu: ", error);
+            }
+        }
+
+        btnAddClient.addEventListener('click', async () => {
+            appData.totalClients++;
+            appData.dailyNewClients++;
+            clientDisplay.innerText = `💼 Łącznie klientów: ${appData.totalClients}`;
+            dailyClientsDisplay.innerText = `Nowi klienci dzisiaj: ${appData.dailyNewClients}`;
+            await saveToCloud();
+        });
+
+        btnMinusClient.addEventListener('click', async () => {
+            if(appData.dailyNewClients > 0 && appData.totalClients > 0) { 
+                appData.totalClients--;
+                appData.dailyNewClients--;
+                clientDisplay.innerText = `💼 Łącznie klientów: ${appData.totalClients}`;
+                dailyClientsDisplay.innerText = `Nowi klienci dzisiaj: ${appData.dailyNewClients}`;
+                await saveToCloud();
+            }
+        });
+
+        function renderHabits() {
+            habitListElement.innerHTML = '';
+            let completedCount = 0;
+
+            appData.habits.forEach((habit, index) => {
+                const li = document.createElement('li');
+                li.className = `habit-item ${habit.completed ? 'completed' : ''}`;
+                li.onclick = (e) => { if(e.target.tagName !== 'INPUT') toggleHabit(index); };
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = habit.completed;
+                checkbox.onchange = () => toggleHabit(index);
+
+                const span = document.createElement('span');
+                span.className = 'habit-text';
+                span.innerText = habit.text;
+
+                li.appendChild(checkbox);
+                li.appendChild(span);
+                habitListElement.appendChild(li);
+
+                if (habit.completed) completedCount++;
+            });
+
+            updateProgress(completedCount);
+        }
+
+        async function toggleHabit(index) {
+            appData.habits[index].completed = !appData.habits[index].completed;
+            renderHabits();
+            await saveToCloud(); 
+        }
+
+        function updateProgress(completedCount) {
+            const percentage = (completedCount / appData.habits.length) * 100;
+            progressBar.style.width = `${percentage}%`;
+            progressBar.style.boxShadow = percentage === 100 ? "0 0 15px #00e676" : "none";
+        }
+
+        function renderHistory() {
+            historyContainer.innerHTML = '';
+            if (appData.successHistory.length === 0) {
+                historyContainer.innerHTML = '<div style="text-align:center; color:#a0a0a0;">Jeszcze brak zapisanych sukcesów.</div>';
+                return;
+            }
+            const reversedHistory = [...appData.successHistory].reverse();
+            reversedHistory.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `<div class="history-date">${item.date}</div><div class="history-win">${item.win}</div>`;
+                historyContainer.appendChild(div);
+            });
+        }
+
+        dailyWinInput.addEventListener('change', async (e) => {
+            appData.currentDailyWin = e.target.value;
+            await saveToCloud();
+        });
+
+        document.getElementById('btnHistory').addEventListener('click', () => {
+            historyContainer.style.display = historyContainer.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.getElementById('btnReset').addEventListener('click', async () => {
+            const completedCount = appData.habits.filter(h => h.completed).length;
+            
+            if(completedCount === 0) {
+                alert("Zrób przynajmniej jedno zadanie, aby utrzymać streak.");
+                return;
+            }
+
+            if(confirm("Czy na pewno chcesz zakończyć ten dzień?")) {
+                const today = new Date();
+                const todayStr = today.toDateString();
+                const formattedDate = today.toLocaleDateString('pl-PL');
+                
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toDateString();
+
+                if (appData.lastCompletedDate === yesterdayStr) {
+                    appData.streakCount++; 
+                } else if (appData.lastCompletedDate !== todayStr) {
+                    appData.streakCount = 1; 
+                }
+
+                let currentWinText = dailyWinInput.value.trim();
+                if (currentWinText === '') {
+                    currentWinText = "Zadania odhaczone, brak notatki.";
+                }
+
+                let finalWinToSave = currentWinText;
+                
+                if (appData.dailyNewClients > 0) {
+                    finalWinToSave += ` <span class="client-highlight">(+${appData.dailyNewClients} nowych klientów)</span>`;
+                }
+                
+                if (appData.lastCompletedDate !== todayStr) {
+                    appData.successHistory.push({ date: formattedDate, win: finalWinToSave });
+                }
+
+                appData.lastCompletedDate = todayStr;
+                appData.habits.forEach(habit => habit.completed = false);
+                appData.currentDailyWin = '';
+                appData.dailyNewClients = 0; 
+                
+                await saveToCloud();
+
+                alert(`🔥 Ukończyłeś dzień. Twój streak to: ${appData.streakCount} dni!`);
+                
+                dailyWinInput.value = '';
+                streakDisplay.innerText = `🔥 ${appData.streakCount} ${appData.streakCount === 1 ? 'dzień' : 'dni'}`;
+                dailyClientsDisplay.innerText = `Nowi klienci dzisiaj: ${appData.dailyNewClients}`;
+                historyContainer.style.display = 'none';
+                
+                renderHabits();
+                renderHistory();
+            }
+        });
+
+        document.getElementById('btnFactoryReset').addEventListener('click', async () => {
+            if(confirm("⚠️ UWAGA! Czy na pewno chcesz wyzerować CAŁY swój progres?\n\nStracisz streak, historię i bazę klientów. Tej operacji NIE DA się cofnąć!")) {
+                
+                appData = {
+                    habits: JSON.parse(JSON.stringify(defaultHabits)),
+                    streakCount: 0,
+                    lastCompletedDate: null,
+                    successHistory: [],
+                    currentDailyWin: "",
+                    totalClients: 0,
+                    dailyNewClients: 0
+                };
+
+                await saveToCloud();
+
+                dailyWinInput.value = '';
+                streakDisplay.innerText = `🔥 0 dni`;
+                clientDisplay.innerText = `💼 Łącznie klientów: 0`;
+                dailyClientsDisplay.innerText = `Nowi klienci dzisiaj: 0`;
+                historyContainer.style.display = 'none';
+                
+                renderHabits();
+                renderHistory();
+
+                alert("Zrobione. Aplikacja została zresetowana do zera.");
+            }
+        });
+
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dateDisplay.innerText = new Date().toLocaleDateString('pl-PL', options).toUpperCase();
+        
+        fetchFromCloud();
+
+    </script>
+</body>
+</html>
