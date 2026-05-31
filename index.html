@@ -411,7 +411,7 @@
             <textarea id="dailyWin" placeholder="Twój największy sukces dzisiaj? (Zapisuje się przy wyjściu)"></textarea>
         </div>
 
-        <button class="btn-reset" id="btnReset">Zakończ dzień i zapisz w chmurze</button>
+        <button class="btn-reset" id="btnReset">ZAKOŃCZ DZIEŃ</button>
         <button class="btn-history" id="btnHistory">📖 Historia Sukcesów</button>
         
         <div class="history-container" id="historyContainer"></div>
@@ -434,6 +434,7 @@
   messagingSenderId: "442652455112",
   appId: "1:442652455112:web:7034bf3763da9ecbedb5fd"
 };
+
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -599,11 +600,11 @@
             }
 
             if(confirm("Czy na pewno chcesz zakończyć ten dzień?")) {
-                const today = new Date();
-                const todayStr = today.toDateString();
-                const formattedDate = today.toLocaleDateString('pl-PL');
+                const now = new Date();
+                const todayStr = now.toDateString();
+                const formattedDate = now.toLocaleDateString('pl-PL');
                 
-                const yesterday = new Date(today);
+                const yesterday = new Date(now);
                 yesterday.setDate(yesterday.getDate() - 1);
                 const yesterdayStr = yesterday.toDateString();
 
